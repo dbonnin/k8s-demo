@@ -50,4 +50,41 @@ public class K8SController {
 		
 	}
 
+	@GetMapping(value = "/stress", produces = "application/json")
+	public Mono<ResponseEntity<PodData>> getTestStress() {
+
+		log.info("getTestStress()");
+		
+		// generate a value between 1 and 10000
+		int stress = (int) (Math.random() * 10000) + 1;
+
+		for (int i = 0; i < stress; i++) {
+			double x = Math.random();
+			double y = Math.random();
+			double z = x * y;
+		}
+
+		// Get hostname using standard java library
+		String hostname = null;
+		String ip = null;
+		
+		try {
+			hostname = java.net.InetAddress.getLocalHost().getHostName();
+			ip = java.net.InetAddress.getLocalHost().getHostAddress();
+		} catch (java.net.UnknownHostException e) {
+			hostname = "unknown";
+			ip = "unknown";
+		}
+
+		
+		return Mono.just(ResponseEntity.ok(PodData.builder()
+				.ip(ip)
+				.hostname(hostname)
+				.appVersion(appVersion)
+				.timestamp(sdf.format(new Date()))
+				.build()));
+		
+	}
+
+
 }
