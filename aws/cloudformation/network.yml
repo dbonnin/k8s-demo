@@ -65,11 +65,15 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: 10.0.2.0/20
+      CidrBlock: !Ref PrivateSubnet1CIDR
       MapPublicIpOnLaunch: false
       Tags:
+        - Key: Name 
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)      
         - Key: Environment
           Value: !Ref EnvironmentName     
+        - Key: Type
+          Value: Private            
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -107,7 +111,7 @@ Resources:
       SubnetId: !Ref PrivateSubnet1
       RouteTableId: !Ref PrivateRouteTable                  
 Outputs:
-  VPCId:
+  VPCID:
     Value: !Ref VPC
     Export:
       Name: !Sub ${EnvironmentName}-VPCID
@@ -115,3 +119,7 @@ Outputs:
     Value: !Ref PublicSubnet1
     Export:
       Name: !Sub ${EnvironmentName}-PublicSubnet1Id
+  PrivateSubnet1Id:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub ${EnvironmentName}-PrivateSubnet1Id      

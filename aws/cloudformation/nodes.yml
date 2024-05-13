@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 instances in private subnets
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+    Default: k8s-demo
+  ImageId:
+    Description: AMI for Amazon Linux 2
+    Type: String
+    Default: ami-023e152801ee4846a
+  KeyName:
+    Description: Key name
+    Type: String
+    Default: k8s-demo-priv        
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 10.0.1.0/24    
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: 10.0.2.0/24        
+
+Resources:
+  KubernetesSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow necessary ports for Kubernetes
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-BastionSecurityGroup"
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Ref PrivateSubnet1CIDR              
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref PrivateSubnet1CIDR                        
+        - IpProtocol: tcp
+          FromPort: 6443
+          ToPort: 6443
+          CidrIp: !Ref PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 2379
+          ToPort: 2380
+          CidrIp: !Ref PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 10250
+          ToPort: 10250
+          CidrIp: !Ref PrivateSubnet1CIDR
+        - IpProtocol: udp
+          FromPort: 8285
+          ToPort: 8285
+          CidrIp: !Ref PrivateSubnet1CIDR
+        - IpProtocol: udp
+          FromPort: 8472
+          ToPort: 8472
+          CidrIp: !Ref PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 30200
+          ToPort: 30400
+          CidrIp: !Ref PrivateSubnet1CIDR          
+        - IpProtocol: tcp
+          FromPort: 30200
+          ToPort: 30400
+          CidrIp: !Ref PublicSubnet1CIDR                   
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+  ControlPlaneInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-023e152801ee4846a # Amazon Linux 2 AMI (64-bit x86) in us-west-2
+      InstanceType: t3.medium
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref KubernetesSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PrivateSubnet1Id"
+      # UserData:
+      #   Fn::Base64: !Sub |
+      #     #!/bin/bash
+      #     curl -s https://raw.githubusercontent.com/dbonnin/k8s-demo/main/scripts/k8s-setup.sh | bash
+      Tags:
+        - Key: Name
+          Value: k8s-control-plane-01
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  WorkerInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: t3.small
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref KubernetesSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PrivateSubnet1Id"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          curl -s https://raw.githubusercontent.com/dbonnin/k8s-demo/main/scripts/k8s-setup.sh | bash
+      Tags:
+        - Key: Name
+          Value: k8s-worker-01
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # WorkerInstance2:
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2 AMI (64-bit x86) in us-west-2
+  #     InstanceType: t3.small
+  #     KeyName: key-095d24d54207dadea
+  #     NetworkInterfaces:
+  #       - AssociatePublicIpAddress: "false"
+  #         DeviceIndex: "0"
+  #         GroupSet:
+  #           - !Ref PrivateSecurityGroup
+  #         SubnetId:
+  #           Fn::ImportValue:
+  #             !Sub "${EnvironmentName}-PRIV-NETS"
+  #     UserData:
+  #       Fn::Base64: !Sub |
+  #         #!/bin/bash
+  #         curl -s https://raw.githubusercontent.com/dbonnin/k8s-demo/main/scripts/k8s-setup.sh | bash
+  #     Tags:
+  #       - Key: Name
+  #         Value: k8s-worker-02
+  #       - Key: Environment
+  #         Value: !Ref EnvironmentName
+
+  # PrivateSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: Allow SSH access from the bastion host
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         SourceSecurityGroupId: !Ref BastionSecurityGroup
+  #     VpcId:
+  #       Fn::ImportValue:
+  #         !Sub "${EnvironmentName}-VPCID"
+  #     Tags:
+  #       - Key: Environment
+  #         Value: !Ref EnvironmentName
+
+  # BastionSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: Allow SSH access from anywhere
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 22
+  #         ToPort: 22
+  #         CidrIp: 0.0.0.0/0
+  #     VpcId:
+  #       Fn::ImportValue:
+  #         !Sub "${EnvironmentName}-VPCID"
+  #     Tags:
+  #       - Key: Environment
+  #         Value: !Ref EnvironmentName
+
+Outputs:
+  ControlPlaneInstance:
+    Value: !Ref ControlPlaneInstance
+    Export:
+      Name: !Sub ${EnvironmentName}-ControlPlaneId
+  ControlPlaneInstancePrivateIP:
+    Description: Private IP address of the control plane instance
+    Value: !GetAtt ControlPlaneInstance.PrivateIp
+    Export:
+      Name: !Sub "${EnvironmentName}-ControlPlaneInstancePrivateIP"
+  Worker1InstancePrivateIP:
+    Description: Private IP address of the worker 1 instance
+    Value: !GetAtt WorkerInstance1.PrivateIp
+    Export:
+      Name: !Sub "${EnvironmentName}-Worker1InstancePrivateIP"
+
+  # Worker2InstancePrivateIP:
+  #   Description: Private IP address of the worker 2 instance
+  #   Value: !GetAtt WorkerInstance2.PrivateIp
+  #   Export:
+  #     Name: !Sub "${EnvironmentName}-Worker2InstancePrivateIP"

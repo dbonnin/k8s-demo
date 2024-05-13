@@ -5,11 +5,19 @@ Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-    Default: K8S
+    Default: k8s-demo
   InstanceType:
     Description: EC2 instance type for the bastion host
     Type: String
     Default: t2.micro
+  ImageId:
+    Description: AMI for Amazon Linux 2
+    Type: String
+    Default: ami-023e152801ee4846a
+  KeyName:
+    Description: Key name
+    Type: String
+    Default: k8s-demo            
 
 Resources:
   BastionSecurityGroup:
@@ -31,9 +39,9 @@ Resources:
   BastionInstance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2 AMI (64-bit x86) in us-west-2
+      ImageId: !Ref ImageId
       InstanceType: !Ref InstanceType
-      KeyName: key-095d24d54207dadea
+      KeyName: !Ref KeyName
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -42,10 +50,6 @@ Resources:
           SubnetId:
             Fn::ImportValue:
               !Sub "${EnvironmentName}-PublicSubnet1Id"
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          yum update -y
       Tags:
         - Key: Environment
           Value: !Ref EnvironmentName
@@ -56,3 +60,7 @@ Outputs:
     Value: !GetAtt BastionInstance.PublicIp
     Export:
       Name: !Sub "${EnvironmentName}-BastionPublicIP"
+  BastionSecurityGroup:
+    Value: !Ref BastionSecurityGroup
+    Export:
+      Name: !Sub ${EnvironmentName}-BastionSecurityGroup      

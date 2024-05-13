@@ -4,7 +4,7 @@ kind: Deployment
 metadata:
   name: k8s-demo
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: k8s-demo
@@ -18,11 +18,11 @@ spec:
         image: dbonnin/k8s-demo
         resources:
           requests:
-            cpu: 0.2
-            memory: 350Mi
+            cpu: "100m"
+            memory: "350Mi"
           limits:
-            cpu: 0.1
-            memory: 1Gi
+            cpu: "350m"
+            memory: "1Gi"
 ---
 apiVersion: v1
 kind: Service
@@ -35,7 +35,7 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
-    nodePort: 30123
+    nodePort: 30202
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
