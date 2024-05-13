@@ -32,4 +32,4 @@ jobs:
               with:
                 context: .
                 push: true
-                tags: dbonnin/k8s-demo:2.0            
+                tags: dbonnin/k8s-demo:3.0            
