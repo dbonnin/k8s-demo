@@ -37,23 +37,23 @@ spec:
     targetPort: 8080
     nodePort: 30202
 ---
-apiVersion: autoscaling/v2beta1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: k8s-demo-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: k8s-demo
-  minReplicas: 2
-  maxReplicas: 6
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      targetAverageUtilization: 75
-  - type: Resource
-    resource:
-      name: memory
-      targetAverageUtilization: 75
+# apiVersion: autoscaling/v2beta1
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: k8s-demo-hpa
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: k8s-demo
+#   minReplicas: 2
+#   maxReplicas: 6
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       targetAverageUtilization: 75
+#   - type: Resource
+#     resource:
+#       name: memory
+#       targetAverageUtilization: 75

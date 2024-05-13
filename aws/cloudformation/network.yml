@@ -12,6 +12,9 @@ Parameters:
   PrivateSubnet1CIDR:
     Type: String
     Default: 10.0.2.0/24
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: 10.0.2.0/24    
 Resources: 
   VPC: 
     Type: AWS::EC2::VPC
@@ -41,7 +44,7 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Environment
-          Value: !Ref EnvironmentName
+          Value: !Ref EnvironmentName          
   NatGatewayEIP:
     Type: AWS::EC2::EIP
     Properties:
