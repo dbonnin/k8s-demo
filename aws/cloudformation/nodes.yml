@@ -121,7 +121,55 @@ Resources:
         - Key: Name
           Value: k8s-worker-01
         - Key: Environment
+          Value: !Ref EnvironmentName          
+
+  WorkerInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: t3.small
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref KubernetesSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PrivateSubnet1Id"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          curl -s https://raw.githubusercontent.com/dbonnin/k8s-demo/main/scripts/k8s-setup.sh | bash
+      Tags:
+        - Key: Name
+          Value: k8s-worker-02
+        - Key: Environment
           Value: !Ref EnvironmentName
+
+  WorkerInstance3:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: t3.small
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "false"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref KubernetesSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PrivateSubnet1Id"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          curl -s https://raw.githubusercontent.com/dbonnin/k8s-demo/main/scripts/k8s-setup.sh | bash
+      Tags:
+        - Key: Name
+          Value: k8s-worker-03
+        - Key: Environment
+          Value: !Ref EnvironmentName          
 
   # WorkerInstance2:
   #   Type: AWS::EC2::Instance
@@ -194,6 +242,16 @@ Outputs:
     Value: !GetAtt WorkerInstance1.PrivateIp
     Export:
       Name: !Sub "${EnvironmentName}-Worker1InstancePrivateIP"
+  Worker2InstancePrivateIP:
+    Description: Private IP address of the worker 2 instance
+    Value: !GetAtt WorkerInstance2.PrivateIp
+    Export:
+      Name: !Sub "${EnvironmentName}-Worker2InstancePrivateIP"
+  Worker3InstancePrivateIP:
+    Description: Private IP address of the worker 3 instance
+    Value: !GetAtt WorkerInstance3.PrivateIp
+    Export:
+      Name: !Sub "${EnvironmentName}-Worker3InstancePrivateIP"            
 
   # Worker2InstancePrivateIP:
   #   Description: Private IP address of the worker 2 instance
