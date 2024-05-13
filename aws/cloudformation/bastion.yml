@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Bastion EC2 instance in public subnet 1
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+    Default: K8S
+  InstanceType:
+    Description: EC2 instance type for the bastion host
+    Type: String
+    Default: t2.micro
+
+Resources:
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH access from anywhere
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${EnvironmentName}-VPCID"
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  BastionInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0c94855ba95c71c99 # Amazon Linux 2 AMI (64-bit x86) in us-west-2
+      InstanceType: !Ref InstanceType
+      KeyName: key-095d24d54207dadea
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref BastionSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              !Sub "${EnvironmentName}-PublicSubnet1Id"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+Outputs:
+  BastionPublicIP:
+    Description: Public IP address of the bastion host
+    Value: !GetAtt BastionInstance.PublicIp
+    Export:
+      Name: !Sub "${EnvironmentName}-BastionPublicIP"
